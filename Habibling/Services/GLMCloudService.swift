@@ -1,4 +1,5 @@
 import Foundation
+import StoreKit
 
 enum GLMCloudError: LocalizedError {
     case rateLimited
@@ -38,11 +39,13 @@ final class GLMCloudService {
     }
 
     private func send(to url: URL, messages: [[String: Any]], maxTokens: Int, jsonOutput: Bool) async throws -> String {
+        // GLM-5.3-Flash: thinking cannot be disabled; structured output needs a generous completion budget.
+        let budget = jsonOutput ? max(maxTokens, 8192) : maxTokens
         var payload: [String: Any] = [
             "model": "glm-5.3-flash",
             "messages": messages,
             "thinking": ["level": "low"],
-            "max_tokens": maxTokens,
+            "max_tokens": budget,
             "temperature": 0.3
         ]
         if jsonOutput {
@@ -54,7 +57,16 @@ final class GLMCloudService {
             "payload": payload
         ]
         #if DEBUG
+        // Test channel only (Worker DEV_MODE). Production sends an Apple-signed JWS instead.
         body["devKey"] = "cramjam-dev-2026"
+        #else
+        // Production: pass the App Store-signed transaction JWS (Cloud+ subscription or Plus).
+        // The Worker verifies the ES256 signature, cert chain, bundleId whitelist, refund status,
+        // and expiry; it accepts both Production and Sandbox receipts (TestFlight + review).
+        guard let jws = await Self.currentEntitlementJWS() else {
+            throw GLMCloudError.invalidCredential
+        }
+        body["appTransaction"] = jws
         #endif
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -82,5 +94,19 @@ final class GLMCloudService {
             throw GLMCloudError.emptyResponse
         }
         return content
+    }
+
+    /// Returns the JWS of the user's current entitlement (Cloud+ subscription or Plus lifetime).
+    /// nil = no valid entitlement; callers should guide the user to restore purchases.
+    static func currentEntitlementJWS() async -> String? {
+        for await result in Transaction.currentEntitlements {
+            if case .verified(let transaction) = result {
+                if transaction.productType == .autoRenewable || transaction.productType == .nonConsumable {
+                    // Transaction.jsonRepresentation is the signed JWS (header.payload.signature).
+                    return String(data: transaction.jsonRepresentation, encoding: .utf8)
+                }
+            }
+        }
+        return nil
     }
 }

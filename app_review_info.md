@@ -27,7 +27,7 @@ AI feature surface: daily pet encouragement line, AI habit plan (onboarding), we
 
 ## 3. AI Configuration / API Keys
 
-- The GLM Cloud proxy devKey (`cramjam-dev-2026`) is compiled in **Debug builds only** (`#if DEBUG`). It does not exist in Release/App Store builds — Release builds send `{appId, userId, payload}` and the Worker validates the subscription/entitlement out of band.
+- The GLM Cloud proxy devKey (`cramjam-dev-2026`) is compiled in **Debug builds only** (`#if DEBUG`). It does not exist in Release/App Store builds — Release builds send `{appId, userId, appTransaction}` where `appTransaction` is the App Store-signed transaction JWS from `Transaction.currentEntitlements`. The Worker verifies the ES256 signature, certificate chain (anchored to Apple Root CA - G3), bundleId whitelist, refund status, and expiry; it accepts both Production and Sandbox receipts (TestFlight and App Review use the Sandbox channel). Rate limiting (30 req/hour + 200 req/day per appId:userId) protects the API key from abuse; normal use is unaffected.
 - No API keys, no secrets in the App Store build. (Verified by repo scan before push.)
 
 ## 4. Subscriptions & IAP
