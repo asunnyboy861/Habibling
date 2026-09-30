@@ -15,10 +15,10 @@
 
 | Page | URL | Status |
 |------|-----|--------|
-| Landing Page | https://asunnyboy861.github.io/Habibling/ | ⏳ Pending (PHASE 7) |
-| Support | https://asunnyboy861.github.io/Habibling/support.html | ⏳ Pending (PHASE 7) |
-| Privacy Policy | https://asunnyboy861.github.io/Habibling/privacy.html | ⏳ Pending (PHASE 7) |
-| Terms of Use | https://asunnyboy861.github.io/Habibling/terms.html | ⏳ Pending (PHASE 7 — required, auto-renewable subscription present) |
+| Landing Page | https://asunnyboy861.github.io/Habibling/ | ✅ Active |
+| Support | https://asunnyboy861.github.io/Habibling/support.html | ✅ Active |
+| Privacy Policy | https://asunnyboy861.github.io/Habibling/privacy.html | ✅ Active |
+| Terms of Use | https://asunnyboy861.github.io/Habibling/terms.html | ✅ Active (required, auto-renewable subscription present) |
 
 ## Repository Structure
 
