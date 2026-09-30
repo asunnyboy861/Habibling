@@ -105,7 +105,7 @@
 
 | 服务 | 说明 | 状态 |
 |------|------|------|
-| GLM 云代理 | cramjam-api.calcs.top（Cloudflare Worker，备 workers.dev）；devKey 仅 #if DEBUG，Release 零密钥 | ✅ 已部署（PHASE 0 实测） |
+| GLM 云代理 | cramjam-api.calcs.top（Cloudflare Worker，备 workers.dev）；通道优先级 JWS → devKey（`GLMProxySecret.txt`，已 gitignore 不入库，Release 包不含该文件自动走 JWS，零密钥）；D1 白名单已注册 `habibling → com.zzoutuo.Habibling`（appId 绑定校验） | ✅ 已部署（2026-09-30 E2E 实测 200/400/401/405 全通过） |
 | 联系支持后端 | msg.calcs.top/api/feedback + mailto 回退 | ✅ 已部署 |
 | 政策页面 | GitHub Pages（workflow 部署，4 页全部 200） | ✅ 已上线 |
 | ATS | HTTPS 出站，无例外域 | ✅ 已配置 |

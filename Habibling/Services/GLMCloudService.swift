@@ -23,23 +23,27 @@ enum GLMCloudError: LocalizedError {
 
 final class GLMCloudService {
     static let shared = GLMCloudService()
+    /// Must exactly match the appId registered in the Worker's D1 `apps` whitelist
+    /// (the Worker validates the appId ↔ bundleId binding during JWS verification).
     static let appId = "habibling"
 
     private let primaryURL = URL(string: "https://cramjam-api.calcs.top")!
     private let fallbackURL = URL(string: "https://cramjam-proxy.iocompile67692.workers.dev")!
 
-    func complete(messages: [[String: Any]], maxTokens: Int = 4096, jsonOutput: Bool = false) async throws -> String {
-        do {
-            return try await send(to: primaryURL, messages: messages, maxTokens: maxTokens, jsonOutput: jsonOutput)
-        } catch let error as GLMCloudError {
-            throw error
-        } catch {
-            return try await send(to: fallbackURL, messages: messages, maxTokens: maxTokens, jsonOutput: jsonOutput)
-        }
+    /// Dev channel key, loaded from GLMProxySecret.txt at the app root (gitignored,
+    /// never committed). Release archives don't contain the file, so production
+    /// builds automatically use the App Store JWS channel instead.
+    private static var proxyDevKey: String? {
+        guard let url = Bundle.main.url(forResource: "GLMProxySecret", withExtension: "txt"),
+              let raw = try? String(contentsOf: url, encoding: .utf8) else { return nil }
+        let key = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        return key.isEmpty ? nil : key
     }
 
-    private func send(to url: URL, messages: [[String: Any]], maxTokens: Int, jsonOutput: Bool) async throws -> String {
-        // GLM-5.3-Flash: thinking cannot be disabled; structured output needs a generous completion budget.
+    func complete(messages: [[String: Any]], maxTokens: Int = 4096, jsonOutput: Bool = false) async throws -> String {
+        // GLM-5.3-Flash: thinking cannot be disabled (error 1210) — always send a level.
+        // Reasoning tokens count against the completion budget: text >=4096, structured >=8192,
+        // otherwise `content` comes back empty with finish_reason "length".
         let budget = jsonOutput ? max(maxTokens, 8192) : maxTokens
         var payload: [String: Any] = [
             "model": "glm-5.3-flash",
@@ -56,18 +60,32 @@ final class GLMCloudService {
             "userId": KeychainStore.userId(),
             "payload": payload
         ]
-        #if DEBUG
-        // Test channel only (Worker DEV_MODE). Production sends an Apple-signed JWS instead.
-        body["devKey"] = "cramjam-dev-2026"
-        #else
-        // Production: pass the App Store-signed transaction JWS (Cloud+ subscription or Plus).
-        // The Worker verifies the ES256 signature, cert chain, bundleId whitelist, refund status,
-        // and expiry; it accepts both Production and Sandbox receipts (TestFlight + review).
-        guard let jws = await Self.currentEntitlementJWS() else {
+        // Channel priority: App Store JWS (production + sandbox/TestFlight) -> devKey
+        // file (development only) -> error guiding the user to restore purchases.
+        if let jws = await Self.currentEntitlementJWS() {
+            body["appTransaction"] = jws
+        } else if let devKey = Self.proxyDevKey {
+            body["devKey"] = devKey
+        } else {
             throw GLMCloudError.invalidCredential
         }
-        body["appTransaction"] = jws
-        #endif
+        do {
+            return try await send(to: primaryURL, body: body)
+        } catch let error as GLMCloudError {
+            switch error {
+            case .rateLimited, .invalidCredential:
+                // Authoritative responses — retrying the backup line won't change the outcome.
+                throw error
+            case .server, .emptyResponse:
+                return try await send(to: fallbackURL, body: body)
+            }
+        } catch {
+            // Network failure (timeout, no connection, TLS) -> backup line.
+            return try await send(to: fallbackURL, body: body)
+        }
+    }
+
+    private func send(to url: URL, body: [String: Any]) async throws -> String {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.timeoutInterval = 90
@@ -101,9 +119,12 @@ final class GLMCloudService {
     static func currentEntitlementJWS() async -> String? {
         for await result in Transaction.currentEntitlements {
             if case .verified(let transaction) = result {
+                guard transaction.revocationDate == nil else { continue }
                 if transaction.productType == .autoRenewable || transaction.productType == .nonConsumable {
-                    // Transaction.jsonRepresentation is the signed JWS (header.payload.signature).
-                    return String(data: transaction.jsonRepresentation, encoding: .utf8)
+                    // Must use result.jwsRepresentation (signed "header.payload.signature").
+                    // transaction.jsonRepresentation is the DECODED payload only — unsigned,
+                    // and the server-side signature verification would reject it.
+                    return result.jwsRepresentation
                 }
             }
         }

@@ -11,6 +11,7 @@ xcuserdata/
 keytext*.md
 COMPETITOR_REPORT.md
 GLMSecret.txt
+GLMProxySecret.txt
 Secrets.plist
 *.p8
 *.pem
