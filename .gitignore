@@ -1,0 +1,23 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcuserdatad/
+.DS_Store
+
+# Secrets & confidential
+.env
+keytext*.md
+COMPETITOR_REPORT.md
+GLMSecret.txt
+Secrets.plist
+*.p8
+*.pem
+*.mobileprovision
+
+# Generated Xcode project (xcodegen)
+Habibling.xcodeproj/
+
+# Test artifacts
+*.xcresult

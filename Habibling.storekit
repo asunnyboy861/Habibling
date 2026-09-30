@@ -1,0 +1,66 @@
+{
+  "identifier" : "6C2A8E1F-4B7D-4E2A-9C3F-A1B2C3D4E5F6",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "24.99",
+      "familyShareable" : false,
+      "internalID" : "plus.lifetime.001",
+      "localizations" : [
+        {
+          "description" : "Unlock Plus forever with a single purchase.",
+          "displayName" : "Habibling Plus",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.zzoutuo.Habibling.plus.lifetime",
+      "referenceName" : "Habibling Plus Lifetime",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "cloud.plus.group.001",
+      "localizations" : [
+
+      ],
+      "name" : "Habibling Cloud+",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "1.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "cloud.plus.monthly.001",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Unlimited Cloud AI reports, billed monthly.",
+              "displayName" : "Habibling Cloud+",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.zzoutuo.Habibling.cloud.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Habibling Cloud+ Monthly",
+          "subscriptionGroupID" : "cloud.plus.group.001",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
